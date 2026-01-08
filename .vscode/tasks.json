@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Ejecutar simulación GAMA (Batch)",
+            "type": "shell",
+            "command": ".\\gama-headless.bat",
+            "args": [
+                "-batch",
+                "Simulacion_SimonBolivar",
+                "${file}"
+            ],
+            "options": {
+                "cwd": "C:\\Users\\ASUS\\AppData\\Local\\Programs\\Gama\\headless"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Abrir en GAMA (Interfaz Gráfica)",
+            "type": "shell",
+            "command": "C:\\Users\\ASUS\\AppData\\Local\\Programs\\Gama\\Gama.exe",
+            "args": [
+                "${file}"
+            ],
+            "options": {
+                "env": {
+                    "JAVA_HOME": "C:\\Users\\ASUS\\AppData\\Local\\Programs\\Gama\\jdk",
+                    "PATH": "C:\\Users\\ASUS\\AppData\\Local\\Programs\\Gama\\jdk\\bin;${env:PATH}"
+                }
+            },
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
