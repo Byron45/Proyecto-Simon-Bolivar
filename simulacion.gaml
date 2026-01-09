@@ -32,14 +32,8 @@ global {
 
 	// --- 4. CONFIGURACIÓN ---
 	int mes_simulacion <- 3 min: 1 max: 12; 
-	int num_vehiculos <- 1500 min: 500 max: 2500;
-	float factor_lluvia <- 1.0 min: 0.5 max: 2.0;
-	float factor_velocidad <- 1.0 min: 0.7 max: 1.5;
-	int dias_a_simular <- 30;
+	int num_vehiculos <- 1500; 
 	bool lluvia_activa <- false;
-	
-	// RUTA DE RESULTADOS
-	string ruta_csv <- "../results/siniestros_mes_" + mes_simulacion + ".csv";
 	
 	// TIEMPO
 	int hora_actual <- 6; 
@@ -78,9 +72,6 @@ global {
 		road_network <- as_edge_graph(via_principal); 
 		do crear_trafico_inicial;
 		do crear_mapa_calor;
-		
-		// Inicializar archivo CSV con encabezados
-		save ["mes", "dia", "hora", "tipo_vehiculo", "causa_accidente", "x", "y"] to: ruta_csv format: "csv" rewrite: true;
 	}
 
 	action crear_mapa_calor {
@@ -114,10 +105,8 @@ global {
 				dia_semana <- dia_semana + 1;
 				if (dia_semana > 6) { dia_semana <- 0; }
 
-				// Verificar si completó el mes
-				if (dias_simulados >= dias_a_simular) {
-					write "--- FIN DEL MES " + mes_simulacion + " --- Total Accidentes: " + total_accidentes;
-					write "Resultados guardados en: " + ruta_csv;
+				if (dias_simulados = 243) {
+					write "--- FIN DE ESTUDIO --- Total Accidentes: " + total_accidentes;
 					do pause; 
 				}
 
@@ -126,8 +115,7 @@ global {
 					proyeccion_8_meses <- promedio_diario * 243;
 				}
 			}
-			// Aplicar factor_lluvia al cálculo de lluvia
-			if (flip(prob_lluvia_mes at (mes_simulacion - 1) * factor_lluvia)) { lluvia_activa <- true; } else { lluvia_activa <- false; }
+			if (flip(prob_lluvia_mes at (mes_simulacion - 1))) { lluvia_activa <- true; } else { lluvia_activa <- false; }
 		}
 		
 		// CAMBIO DÍA/NOCHE (ESTILO MAPA)
@@ -212,7 +200,7 @@ species Vehiculo skills: [moving] {
 
 	reflex moverse {
 		if (chocado) { velocidad_real <- 0.0; return; }
-		velocidad_real <- velocidad_base * factor_velocidad;
+		velocidad_real <- velocidad_base;
 		if (es_imprudente) { velocidad_real <- velocidad_real * 1.3; } 
 		if (es_ebrio) { velocidad_real <- velocidad_real * 1.5; } 
 		if (lluvia_activa) { velocidad_real <- velocidad_real * 0.7; } 
@@ -258,18 +246,12 @@ species Vehiculo skills: [moving] {
 	action registrar_choque {
 		chocado <- true; total_accidentes <- total_accidentes + 1;
 		ubicaciones_accidentes <- ubicaciones_accidentes + location; 
-		
-		string causa <- "Azar";
-		if (lluvia_activa and !es_ebrio) { acc_clima <- acc_clima + 1; causa <- "Clima"; }
-		else if (es_ebrio) { acc_alcohol <- acc_alcohol + 1; causa <- "Alcohol"; }
-		else if (es_imprudente) { acc_velocidad <- acc_velocidad + 1; causa <- "Velocidad"; }
-		else if (no_respeta_distancia) { acc_distancia <- acc_distancia + 1; causa <- "Distancia"; }
+		if (lluvia_activa and !es_ebrio) { acc_clima <- acc_clima + 1; }
+		else if (es_ebrio) { acc_alcohol <- acc_alcohol + 1; }
+		else if (es_imprudente) { acc_velocidad <- acc_velocidad + 1; }
+		else if (no_respeta_distancia) { acc_distancia <- acc_distancia + 1; }
 		else { acc_normal <- acc_normal + 1; }
-		
-		// Guardar en CSV
-		save [mes_simulacion, dias_simulados, hora_actual, species(self), causa, int(location.x), int(location.y)] to: ruta_csv format: "csv" rewrite: false;
-		
-		write "ACCIDENTE #" + total_accidentes + " (" + species(self) + ") - " + (nombres_dias at dia_semana) + " " + hora_actual + ":00 - Causa: " + causa;
+		write "ACCIDENTE #" + total_accidentes + " (" + species(self) + ") - " + (nombres_dias at dia_semana) + " " + hora_actual + ":00";
 	}
 	
 	aspect default {
@@ -293,10 +275,8 @@ species Bicicleta parent: Vehiculo { init { velocidad_base <- 30.0 #km/#h; color
 
 // --- EXPERIMENTO ---
 experiment Simulacion_SimonBolivar type: gui {
-	parameter "Mes del Año (1-12)" var: mes_simulacion category: "Configuración Temporal";
-	parameter "Densidad Tráfico (500-2500)" var: num_vehiculos category: "Tráfico";
-	parameter "Factor Lluvia (0.5-2.0)" var: factor_lluvia category: "Clima";
-	parameter "Factor Velocidad (0.7-1.5)" var: factor_velocidad category: "Velocidad";
+	parameter "Mes del Año" var: mes_simulacion category: "Escenario";
+	parameter "Densidad Tráfico" var: num_vehiculos category: "Tráfico";
 
 	output {
 		monitor "Día Semana" value: nombres_dias at dia_semana;
