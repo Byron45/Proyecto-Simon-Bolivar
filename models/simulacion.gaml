@@ -640,6 +640,9 @@ experiment Simulacion_SimonBolivar type: gui {
 		monitor "Hora" value: hora_actual;
 		monitor "Total Accidentes" value: total_accidentes;
 		monitor "Lluvia Activa" value: lluvia_activa;
+		monitor "Vehículos" value: length(Vehiculo);
+		monitor "Hora Completa" value: (hora_actual < 10 ? "0" + hora_actual : "" + hora_actual) + ":" + (minuto_actual < 10 ? "0" + minuto_actual : "" + minuto_actual);
+		monitor "Mes" value: mes_simulacion;
 		layout #split;
 		display mapa type: opengl background: color_fondo {
 			species barrio;
@@ -662,53 +665,35 @@ experiment Simulacion_SimonBolivar type: gui {
 				draw "J.B. Aguirre" at: punto_bautista color: es_noche ? #white : #black font: font("Arial", 5, #bold);
 				draw "Interoceánica" at: punto_interoceanica color: es_noche ? #white : #black font: font("Arial", 5, #bold);
 			}
-			
-			// PANEL HUD - INFORMACIÓN EN TIEMPO REAL
-			graphics "HUD_Panel" {
-				// Posición fija en esquina superior izquierda
-				float x_base <- 50.0;
-				float y_base <- 50.0;
-				float ancho_panel <- 350.0;
-				float alto_panel <- 200.0;
+
+			overlay position: {5, 5} size: {380 #px, 220 #px} background: es_noche ? rgb(20, 20, 40, 230) : rgb(255, 255, 255, 240) border: es_noche ? rgb(100, 150, 255) : rgb(50, 100, 200) rounded: true {
+				float y <- 20.0;
+				rgb txt <- es_noche ? #white : #black;
 				
-				// Fondo semi-transparente
-				rgb color_panel <- es_noche ? rgb(20, 20, 40, 220) : rgb(255, 255, 255, 230);
-				draw rectangle(ancho_panel, alto_panel) at: {x_base + ancho_panel/2, y_base + alto_panel/2} 
-					color: color_panel border: es_noche ? rgb(100, 150, 255) : rgb(50, 100, 200);
+				draw "SIMULACION EN VIVO" at: {10 #px, y #px} color: es_noche ? rgb(100, 200, 255) : rgb(0, 100, 200) font: font("Arial", 14, #bold) anchor: #top_left;
 				
-				// Colores de texto
-				rgb color_texto <- es_noche ? #white : #black;
-				rgb color_acento <- es_noche ? rgb(100, 200, 255) : rgb(0, 100, 200);
+				y <- y + 30.0;
+				draw "Mes: " + mes_simulacion + " | Dia: " + (dias_simulados + 1) at: {15 #px, y #px} color: txt font: font("Arial", 11, #plain) anchor: #top_left;
 				
-				// LÍNEA 1: Fecha y Mes
-				string texto_mes <- "MES " + mes_simulacion + " - DÍA " + (dias_simulados + 1);
-				draw texto_mes at: {x_base + 15, y_base + 25} color: color_acento font: font("Arial", 14, #bold);
+				y <- y + 25.0;
+				string hora_fmt <- (hora_actual < 10 ? "0" : "") + hora_actual + ":" + (minuto_actual < 10 ? "0" : "") + minuto_actual;
+				draw (nombres_dias at dia_semana) + " " + hora_fmt at: {15 #px, y #px} color: txt font: font("Arial", 11, #plain) anchor: #top_left;
 				
-				// LÍNEA 2: Día de la semana y hora
-				string hora_formato <- hora_actual < 10 ? "0" + hora_actual : "" + hora_actual;
-				string min_formato <- minuto_actual < 10 ? "0" + minuto_actual : "" + minuto_actual;
-				string texto_tiempo <- nombres_dias at dia_semana + " " + hora_formato + ":" + min_formato;
-				draw texto_tiempo at: {x_base + 15, y_base + 55} color: color_texto font: font("Arial", 13, #plain);
+				y <- y + 30.0;
+				rgb color_acc <- total_accidentes > 20 ? #red : (total_accidentes > 10 ? #orange : #green);
+				draw "Accidentes: " + total_accidentes at: {15 #px, y #px} color: color_acc font: font("Arial", 12, #bold) anchor: #top_left;
 				
-				// LÍNEA 3: Accidentes
-				string texto_accidentes <- "Accidentes: " + total_accidentes;
-				rgb color_accidentes <- total_accidentes > 20 ? #red : (total_accidentes > 10 ? #orange : #green);
-				draw texto_accidentes at: {x_base + 15, y_base + 85} color: color_accidentes font: font("Arial", 12, #bold);
+				y <- y + 30.0;
+				string clima_txt <- lluvia_activa ? "LLUVIA" : (es_noche ? "NOCHE" : "DESPEJADO");
+				rgb color_clima <- lluvia_activa ? rgb(50, 150, 255) : (es_noche ? rgb(150, 150, 200) : rgb(255, 200, 0));
+				draw "Clima: " + clima_txt at: {15 #px, y #px} color: color_clima font: font("Arial", 11, #bold) anchor: #top_left;
 				
-				// LÍNEA 4: Estado del clima
-				string texto_clima <- "Clima: " + (lluvia_activa ? "LLUVIA" : (es_noche ? "NOCHE" : "DESPEJADO"));
-				rgb color_clima <- lluvia_activa ? rgb(50, 100, 200) : (es_noche ? rgb(100, 100, 150) : rgb(255, 200, 0));
-				draw texto_clima at: {x_base + 15, y_base + 115} color: color_clima font: font("Arial", 11, #plain);
+				y <- y + 25.0;
+				draw "Vehiculos: " + length(Vehiculo) at: {15 #px, y #px} color: txt font: font("Arial", 10, #plain) anchor: #top_left;
 				
-				// LÍNEA 5: Vehículos activos
-				int vehiculos_activos <- length(Vehiculo);
-				string texto_vehiculos <- "Vehiculos: " + vehiculos_activos;
-				draw texto_vehiculos at: {x_base + 15, y_base + 145} color: color_texto font: font("Arial", 11, #plain);
-				
-				// LÍNEA 6: Factor de velocidad
-				string texto_velocidad <- "Velocidad: " + factor_velocidad_usuario + "x";
-				rgb color_velocidad <- factor_velocidad_usuario > 1.5 ? #red : (factor_velocidad_usuario > 1.0 ? #orange : #green);
-				draw texto_velocidad at: {x_base + 15, y_base + 175} color: color_velocidad font: font("Arial", 11, #plain);
+				y <- y + 25.0;
+				rgb color_vel <- factor_velocidad_usuario > 1.5 ? #red : (factor_velocidad_usuario > 1.0 ? #orange : #green);
+				draw "Velocidad: " + factor_velocidad_usuario + "x" at: {15 #px, y #px} color: color_vel font: font("Arial", 10, #bold) anchor: #top_left;
 			}
 
 		}
